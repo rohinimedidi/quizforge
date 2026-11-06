@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>QuizForge · Software Interview Prep</title>
+<style>
+:root{--bg:#f4f5fb;--cd:#fff;--tx:#1f2430;--mu:#6b7280;--ac:#4f46e5;--ok:#16a34a;--bd:#dc2626;--bo:#e2e5f0;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1220;--cd:#181c30;--tx:#e8eaf6;--mu:#9aa3c0;--ac:#818cf8;--bo:#2a3050;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0f1220;--cd:#181c30;--tx:#e8eaf6;--mu:#9aa3c0;--ac:#818cf8;--bo:#2a3050;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,sans-serif;background:var(--bg);color:var(--tx)}
+.w{max-width:760px;margin:0 auto;padding:16px}
+header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}nav{display:flex;gap:8px}
+.logo{font-size:1.3rem;font-weight:800;background:none;border:none;color:var(--ac)}
+.card{background:var(--cd);border:1px solid var(--bo);border-radius:16px;padding:20px}
+h1,h2{margin:.4em 0}.m{color:var(--mu)}
+button,select,input,textarea{font:inherit;color:var(--tx);background:var(--cd);border:1px solid var(--bo);border-radius:10px;padding:8px 12px}
+button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
+:focus-visible{outline:3px solid var(--ac);outline-offset:2px}
+.pri{background:var(--ac);color:#fff;border-color:var(--ac)}.big{width:100%;padding:14px;font-size:1.1rem;margin-top:16px}
+.g{background:none;border:none;color:var(--mu)}
+.ch{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0}.chip.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0}label{display:flex;flex-direction:column;gap:4px}
+textarea{width:100%;font-family:monospace;margin:8px 0}
+.row{display:flex;align-items:center;gap:8px}.b{justify-content:space-between}
+.pg{height:8px;background:var(--bo);border-radius:99px;overflow:hidden;margin:10px 0}.pg i{display:block;height:100%;background:var(--ac)}
+.opts{display:grid;gap:10px;margin:14px 0}.opt{text-align:left;padding:14px}
+.opt.ok{background:var(--ok);color:#fff;border-color:var(--ok)}.opt.bad{background:var(--bd);color:#fff;border-color:var(--bd)}
+kbd{background:var(--bo);border-radius:6px;padding:1px 7px;margin-right:6px}
+.fb{padding:12px;border-radius:12px;border:2px solid;margin:10px 0}.fb.ok{border-color:var(--ok)}.fb.bad{border-color:var(--bd)}
+.score{font-size:4rem;font-weight:800;color:var(--ac);margin:0}
+.rv{list-style:none;padding:0}.rv li{border-left:5px solid;padding:8px 12px;margin:10px 0;background:var(--bg);border-radius:8px}.rv .ok{border-color:var(--ok)}.rv .bad{border-color:var(--bd)}
+.br{display:grid;grid-template-columns:120px 1fr 44px;gap:8px;align-items:center;margin:6px 0}.bar{height:14px;background:var(--bo);border-radius:99px;overflow:hidden}.bar i{display:block;height:100%;background:var(--ac)}
+.hm{display:grid;grid-template-rows:repeat(7,14px);grid-auto-flow:column;grid-auto-columns:14px;gap:3px;overflow-x:auto;padding-bottom:6px}.hm i{border-radius:3px;background:var(--bo)}.hm i.on{background:var(--ok)}
+.bdg{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px}.bdg div{display:flex;flex-direction:column;padding:10px;border:1px dashed var(--bo);border-radius:12px;opacity:.55}.bdg div.on{opacity:1;border:1px solid var(--ac)}.bdg span{font-size:1.6rem}.bdg small{color:var(--mu)}
+.err{color:var(--bd)}.sv{padding:8px 0;border-bottom:1px solid var(--bo);flex-wrap:wrap}
+#toast{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));display:grid;gap:8px}#toast div{background:var(--ac);color:#fff;padding:12px 16px;border-radius:12px}
+footer{text-align:center;color:var(--mu);font-size:.8rem;margin:16px 0}.lo{color:var(--bd)}svg{width:100%;background:var(--bg);border-radius:12px}
+@media(max-width:560px){.g2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="w">
+<header><button class="logo" onclick="home()">⚒ QuizForge</button>
+<nav><button onclick="cust()">Custom</button><button onclick="stats()">Stats</button><button aria-label="Toggle dark mode" onclick="theme()">🌓</button></nav></header>
+<div id="app"></div><div id="toast" aria-live="polite"></div>
+<footer>Your data stays in this browser · keys 1–4 answer, N for next</footer>
+</div>
+<script>
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let D={theme:'',hist:[],cat:{},deck:[],daily:{},badges:[],custom:[],ct:0};
+try{Object.assign(D,JSON.parse(localStorage.getItem('qf2')||'{}'))}catch(e){}
+const save=()=>{try{localStorage.setItem('qf2',JSON.stringify(D))}catch(e){}};
+if(D.theme)document.documentElement.dataset.theme=D.theme;
+function theme(){const dark=document.documentElement.dataset.theme?document.documentElement.dataset.theme==='dark':matchMedia('(prefers-color-scheme:dark)').matches;D.theme=dark?'light':'dark';document.documentElement.dataset.theme=D.theme;save()}
+
+/* ---------- data ---------- */
+const CATS=['DSA','Programming','Web Dev','Databases','DevOps & Git','System Design'],LV=['easy','medium','hard'],DAY=864e5,IV=[1,3,7];
+const CF={low:['Low',10,0],medium:['Medium',20,-5],high:['High',30,-15]};
+const R=[
+["DSA", "easy", "Which data structure follows LIFO (last in, first out) order?", ["Queue", "Stack", "Heap", "Graph"], 1, "A stack pops the most recently pushed item first."],
+["DSA", "easy", "What is the time complexity of accessing an array element by index?", ["O(n)", "O(log n)", "O(1)", "O(n²)"], 2, "Arrays give constant-time random access."],
+["DSA", "medium", "Average time complexity of a lookup in a hash table?", ["O(1)", "O(log n)", "O(n)", "O(n log n)"], 0, "With a good hash function, lookups are O(1) on average."],
+["DSA", "medium", "Which binary search tree traversal visits nodes in sorted order?", ["Preorder", "Inorder", "Postorder", "Level-order"], 1, "Inorder visits left, node, right, which is ascending for a BST."],
+["DSA", "medium", "Which algorithm finds the shortest path in an unweighted graph?", ["DFS", "Prim", "BFS", "Kruskal"], 2, "BFS explores level by level, so the first hit is the shortest."],
+["DSA", "medium", "Worst-case time complexity of quicksort?", ["O(n log n)", "O(n)", "O(log n)", "O(n²)"], 3, "Bad pivots (e.g. already sorted input) degrade it to O(n²)."],
+["DSA", "hard", "Which structure is the usual choice for a priority queue?", ["Linked list", "Binary heap", "Stack", "Trie"], 1, "A binary heap gives O(log n) insert and extract-min/max."],
+["DSA", "hard", "Dijkstra’s algorithm gives wrong results on graphs with…", ["Cycles", "Directed edges", "Negative edge weights", "Self loops"], 2, "Negative weights break its greedy assumption; use Bellman-Ford."],
+["DSA", "hard", "Space complexity of recursive DFS on a tree of height h?", ["O(1)", "O(h)", "O(n²)", "O(2ʰ)"], 1, "The call stack grows to the tree’s height."],
+["Programming", "easy", "Which JavaScript keyword declares a constant binding?", ["var", "let", "const", "static"], 2, "const prevents reassignment of the binding."],
+["Programming", "easy", "What does OOP stand for?", ["Object-Oriented Programming", "Ordered Operation Process", "Object Operation Protocol", "Open Output Programming"], 0, "OOP models software as interacting objects."],
+["Programming", "medium", "Which OOP principle hides internal state behind a public interface?", ["Inheritance", "Encapsulation", "Polymorphism", "Composition"], 1, "Encapsulation bundles data with methods and limits direct access."],
+["Programming", "medium", "What does typeof null return in JavaScript?", ["\"null\"", "\"undefined\"", "\"number\"", "\"object\""], 3, "A long-standing quirk of the language."],
+["Programming", "medium", "Which Python type is immutable?", ["list", "dict", "tuple", "set"], 2, "Tuples cannot be changed after creation."],
+["Programming", "medium", "What does the “S” in SOLID stand for?", ["Scalable Design", "Single Responsibility", "Static Binding", "Structured Logic"], 1, "A class should have only one reason to change."],
+["Programming", "hard", "What typically causes a memory leak in a garbage-collected language?", ["Using recursion", "Lingering references to objects no longer needed", "Too many functions", "Using constants"], 1, "The GC cannot free objects that are still reachable."],
+["Programming", "hard", "How do threads differ from processes?", ["Threads share the memory of their process", "Threads have separate address spaces", "Processes share memory by default", "There is no difference"], 0, "That sharing makes threads lighter but needs synchronization."],
+["Web Dev", "easy", "Which HTTP method is typically used to create a resource?", ["GET", "POST", "DELETE", "HEAD"], 1, "POST submits data to create a new resource."],
+["Web Dev", "easy", "Which CSS property sets the text color?", ["font-color", "text-color", "color", "foreground"], 2, "color sets the foreground text color."],
+["Web Dev", "medium", "Which status code means a resource was created successfully?", ["200", "201", "204", "301"], 1, "201 Created is returned after a successful POST."],
+["Web Dev", "medium", "What does CORS control?", ["CPU allocation", "Database sharding", "Code compilation", "Which origins a browser may request resources from"], 3, "Cross-Origin Resource Sharing is enforced by browsers via headers."],
+["Web Dev", "medium", "Which React hook manages local component state?", ["useEffect", "useState", "useRef", "useMemo"], 1, "useState returns a value and a setter."],
+["Web Dev", "medium", "What is the virtual DOM?", ["An in-memory copy of the UI used to compute minimal DOM updates", "A browser plugin", "A server-side database", "A CSS framework"], 0, "React diffs virtual trees to update the real DOM efficiently."],
+["Web Dev", "hard", "Which header tells browsers to only use HTTPS for a site?", ["X-Frame-Options", "Strict-Transport-Security", "Content-Type", "ETag"], 1, "HSTS enforces HTTPS for future visits."],
+["Web Dev", "hard", "Which attack injects malicious scripts into pages seen by other users?", ["CSRF", "SQL injection", "DDoS", "XSS"], 3, "Cross-Site Scripting; mitigate by escaping output and using CSP."],
+["Databases", "easy", "Which SQL clause filters rows?", ["ORDER BY", "GROUP BY", "WHERE", "LIMIT"], 2, "WHERE keeps only rows matching a condition."],
+["Databases", "easy", "What does a primary key do?", ["Uniquely identifies each row", "Encrypts a table", "Speeds up backups", "Links two databases"], 0, "It must be unique and non-null."],
+["Databases", "medium", "Which JOIN returns all left-table rows plus matching right rows?", ["INNER JOIN", "LEFT JOIN", "CROSS JOIN", "SELF JOIN"], 1, "Unmatched right-side columns come back as NULL."],
+["Databases", "medium", "In ACID, what does “I” stand for?", ["Integrity", "Isolation", "Indexing", "Idempotence"], 1, "Concurrent transactions should not interfere with each other."],
+["Databases", "medium", "Which of these is a document-oriented NoSQL database?", ["PostgreSQL", "MySQL", "Oracle", "MongoDB"], 3, "MongoDB stores JSON-like documents."],
+["Databases", "medium", "What is a database index mainly for?", ["Speeding up data retrieval", "Encrypting data", "Backing up tables", "Compressing rows"], 0, "Indexes trade extra storage and write cost for faster reads."],
+["Databases", "hard", "What is the main goal of normalization?", ["Increase redundancy", "Reduce redundancy and update anomalies", "Encrypt data", "Speed up every write"], 1, "Normal forms organize data to avoid duplication."],
+["Databases", "hard", "Which isolation level prevents dirty reads but allows non-repeatable reads?", ["Read Uncommitted", "Repeatable Read", "Read Committed", "Serializable"], 2, "Read Committed only sees committed data, but it can change between reads."],
+["DevOps & Git", "easy", "Which command records staged changes in the local repository?", ["git push", "git commit", "git pull", "git clone"], 1, "git commit saves a snapshot to local history."],
+["DevOps & Git", "easy", "Which command copies a remote repository to your machine?", ["git init", "git add", "git merge", "git clone"], 3, "git clone downloads the repo and its history."],
+["DevOps & Git", "medium", "What does CI/CD stand for?", ["Code Inspection / Code Deployment", "Continuous Integration / Continuous Delivery", "Central Index / Central Database", "Compile / Debug"], 1, "Automating build, test and release pipelines."],
+["DevOps & Git", "medium", "How do containers differ from virtual machines?", ["Containers share the host OS kernel", "Containers include a full guest OS", "VMs share the host kernel", "There is no difference"], 0, "That makes containers lighter and faster to start."],
+["DevOps & Git", "medium", "What does git rebase do compared to git merge?", ["Deletes the branch", "Replays commits onto another base, rewriting history", "Pushes to remote", "Nothing different"], 1, "Rebase creates a linear history; merge keeps a merge commit."],
+["DevOps & Git", "medium", "Kubernetes is primarily used for…", ["Code editing", "Database design", "Container orchestration", "Unit testing"], 2, "It schedules, scales and heals containerized workloads."],
+["DevOps & Git", "hard", "What does git stash do?", ["Deletes uncommitted changes", "Temporarily shelves uncommitted changes", "Pushes to remote", "Squashes commits"], 1, "Use git stash pop to restore them."],
+["DevOps & Git", "hard", "Which tool is used for Infrastructure as Code?", ["Jira", "Figma", "Terraform", "Postman"], 2, "Terraform defines cloud resources in declarative config files."],
+["DevOps & Git", "hard", "What is a blue-green deployment?", ["Two identical environments with traffic switched between them", "Deploying only at night", "Deploying to one server", "Color-coding log output"], 0, "It allows near-zero-downtime releases and fast rollback."],
+["System Design", "easy", "What is a load balancer used for?", ["Compiling code", "Distributing traffic across servers", "Storing files", "Encrypting databases"], 1, "It spreads requests to improve availability and throughput."],
+["System Design", "easy", "What is an API?", ["A database", "A programming language", "An operating system", "An interface that lets software talk to other software"], 3, "APIs define how components interact."],
+["System Design", "medium", "What does the CAP theorem state?", ["A distributed system cannot guarantee consistency, availability and partition tolerance all at once", "Caches always improve performance", "Databases must be relational", "APIs must be stateless"], 0, "During a partition you must trade consistency vs availability."],
+["System Design", "medium", "What is the main benefit of caching?", ["Lower latency and reduced backend load", "More disk space", "Better compile times", "Smaller code size"], 0, "Serving repeated reads from fast storage saves work."],
+["System Design", "medium", "What is horizontal scaling?", ["Upgrading one machine’s CPU", "Adding more machines to share load", "Reducing traffic", "Rewriting code in C"], 1, "Scale out by adding nodes rather than scale up."],
+["System Design", "medium", "What are message queues (e.g. Kafka, RabbitMQ) used for?", ["Styling pages", "Sorting arrays", "Asynchronous, decoupled communication between services", "Compressing images"], 2, "Producers and consumers work independently and absorb spikes."],
+["System Design", "hard", "Which pattern stops calls to a failing service to prevent cascading failures?", ["Singleton", "Circuit breaker", "Observer", "Factory"], 1, "It fails fast, then retries after a cool-down."],
+["System Design", "hard", "What does it mean for an operation to be idempotent?", ["It always fails", "It only reads data", "It is encrypted", "Repeating it has the same effect as doing it once"], 3, "Critical for safe retries, e.g. PUT and DELETE."],
+["DSA", "easy", "Which data structure follows FIFO (first in, first out) order?", ["Stack", "Queue", "Tree", "Set"], 1, "A queue serves the oldest item first."],
+["DSA", "easy", "Which sorting algorithm guarantees O(n log n) in the worst case?", ["Bubble sort", "Merge sort", "Insertion sort", "Selection sort"], 1, "Merge sort always splits and merges in n log n."],
+["DSA", "medium", "Which technique stores results of overlapping subproblems to avoid recomputation?", ["Greedy", "Backtracking", "Brute force", "Dynamic programming"], 3, "Memoization or tabulation turns exponential recursion into polynomial time."],
+["DSA", "medium", "Which technique solves “two sum” on a sorted array in O(n)?", ["Two pointers", "Recursion", "Heap", "Trie"], 0, "Move a left and right pointer inward based on the current sum."],
+["DSA", "hard", "What is the time complexity of building a binary heap from n elements?", ["O(n log n)", "O(n)", "O(log n)", "O(n²)"], 1, "Bottom-up heapify is O(n) overall."],
+["Programming", "easy", "Which JavaScript operator compares value and type without coercion?", ["==", "=", "===", "!="], 2, "=== is strict equality."],
+["Programming", "medium", "What is recursion?", ["A function calling itself", "A loop that never ends", "Importing a module", "Compiling code"], 0, "It needs a base case to terminate."],
+["Programming", "medium", "In Java, how should you compare the contents of two strings?", ["==", "equals()", "compareRef()", "is()"], 1, "== compares references; equals() compares characters."],
+["Programming", "medium", "What is a deadlock?", ["A crashed process", "Slow network traffic", "Threads waiting on each other forever", "Memory overflow"], 2, "Each thread holds a resource the other needs."],
+["Programming", "hard", "In a regular JavaScript function, what determines the value of this?", ["Where it was defined", "How it is called", "The file name", "The variable name"], 1, "Arrow functions differ: they capture this lexically."],
+["Web Dev", "easy", "Which HTML element creates a hyperlink?", ["link", "a", "href", "url"], 1, "The a (anchor) element with an href attribute."],
+["Web Dev", "easy", "Which HTTP status code means “Not Found”?", ["404", "200", "500", "301"], 0, "The server cannot find the requested resource."],
+["Web Dev", "medium", "Which HTTP method is idempotent and replaces a resource?", ["POST", "PUT", "CONNECT", "TRACE"], 1, "Repeating the same PUT yields the same state."],
+["Web Dev", "medium", "What are JSON Web Tokens (JWT) commonly used for?", ["Styling pages", "Compressing images", "Stateless authentication", "Indexing databases"], 2, "The signed token carries claims so the server needn’t store sessions."],
+["Web Dev", "hard", "In the JavaScript event loop, what runs first?", ["setTimeout callbacks", "Promise microtasks", "Both at the same time", "Depends on the OS"], 1, "Microtasks are drained before the next macrotask."],
+["Databases", "easy", "Which command removes all rows but keeps the table structure?", ["DROP TABLE", "TRUNCATE TABLE", "DELETE DATABASE", "REMOVE ROWS"], 1, "TRUNCATE empties the table quickly."],
+["Databases", "medium", "Which constraint links a column to another table’s key?", ["Unique", "Check", "Default", "Foreign key"], 3, "Foreign keys enforce referential integrity."],
+["Databases", "medium", "GROUP BY is typically used with…", ["Triggers", "Only indexes", "Aggregate functions like COUNT and SUM", "Only joins"], 2, "It groups rows so aggregates run per group."],
+["Databases", "hard", "What is the N+1 query problem?", ["A table with N+1 columns", "Running one extra query per item after an initial query", "An index with N levels", "A deadlock between N queries"], 1, "Fix it with joins or eager loading/batching."],
+["Databases", "hard", "Which index type is the default and best for range queries in most RDBMS?", ["Hash index", "B-tree index", "Bitmap only", "None"], 1, "B-trees keep keys ordered, so ranges and sorting are efficient."],
+["DevOps & Git", "easy", "Which file lists the files Git should ignore?", [".gitignore", ".gitkeep", "ignore.txt", ".gitconfig"], 0, "Patterns in .gitignore keep files out of version control."],
+["DevOps & Git", "medium", "What does the docker build command produce?", ["A container", "An image", "A volume", "A network"], 1, "An image is built from a Dockerfile, then run as containers."],
+["DevOps & Git", "medium", "Which command shows the commit history?", ["git status", "git diff", "git remote", "git log"], 3, "git log lists commits newest first."],
+["DevOps & Git", "hard", "What does git cherry-pick do?", ["Deletes a commit", "Pushes to remote", "Applies a specific commit from another branch", "Clones a repo"], 2, "It copies one commit onto your current branch."],
+["DevOps & Git", "hard", "What is a Kubernetes Pod?", ["A whole cluster", "The smallest deployable unit", "A database", "A load balancer"], 1, "A Pod wraps one or more tightly coupled containers."],
+["System Design", "easy", "What does CDN stand for?", ["Central Data Node", "Code Delivery Name", "Cached Data Network", "Content Delivery Network"], 3, "CDNs serve static content from servers close to users."],
+["System Design", "medium", "What is database sharding?", ["Backing up a database", "Encrypting tables", "Splitting data across multiple databases or servers", "Joining tables"], 2, "Sharding scales storage and writes horizontally."],
+["System Design", "medium", "What makes a service stateless?", ["It keeps no client session data between requests", "It has no database", "It uses no network", "It never logs"], 0, "Any instance can handle any request, so scaling and failover are easy."],
+["System Design", "hard", "What does eventual consistency mean?", ["Reads are always instantly up to date", "Replicas converge to the same value if no new updates arrive", "Data is never consistent", "It only applies to ACID databases"], 1, "Typical of AP systems such as Dynamo-style stores."],
+["System Design", "hard", "Which rate-limiting algorithm allows short bursts using tokens?", ["Round robin", "Bubble sort", "Binary search", "Token bucket"], 3, "Tokens refill at a steady rate; each request spends one."]
+];
+const Q=R.map((r,i)=>({id:'q'+i,c:r[0],d:r[1],q:r[2],o:r[3],a:r[4],e:r[5]}));
+const allQ=()=>Q.concat(D.custom.flatMap(c=>c.qs));
+
+/* ---------- helpers ---------- */
+const dk=(d=new Date())=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+function rng(str){let h=1779033703^str.length;for(let i=0;i<str.length;i++){h=Math.imul(h^str.charCodeAt(i),3432918353);h=h<<13|h>>>19}let a=h>>>0;return()=>{a|=0;a=a+0x6d2b79f5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function sh(arr,seed){const r=rng(String(seed??Math.random())),a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function streak(){const d=new Date();if(!D.daily[dk(d)])d.setDate(d.getDate()-1);let n=0;while(D.daily[dk(d)]){n++;d.setDate(d.getDate()-1)}return n}
+const due=()=>D.deck.filter(c=>c.due<=Date.now());
+function addMis(id){D.deck=D.deck.filter(c=>c.id!==id).concat({id,st:0,due:Date.now()+IV[0]*DAY})}
+function rev(id,ok){const c=D.deck.find(x=>x.id===id);if(!c)return 0;D.deck=D.deck.filter(x=>x.id!==id);if(!ok){D.deck.push({id,st:0,due:Date.now()+IV[0]*DAY});return 0}const st=c.st+1;if(st>=IV.length)return 1;D.deck.push({id,st,due:Date.now()+IV[st]*DAY});return 0}
+function toast(t){const d=document.createElement('div');d.textContent=t;$('#toast').append(d);setTimeout(()=>d.remove(),4000)}
+
+/* ---------- home ---------- */
+let H={mode:'solo',cat:'Mixed',diff:'adaptive',n:2,names:['','','','']},S=null,tick=null;
+function stop(){clearInterval(tick);tick=null}
+function home(){stop();S=null;const m=[['solo','Solo'],['daily','Daily Challenge'],['pass','Pass-and-Play'],['review','Review Mistakes ('+due().length+' due)']];
+$('#app').innerHTML=`<section class="card"><h1>Ace your software interview</h1><p class="m">🔥 Daily streak: <b>${streak()}</b></p>
+<div class="ch">${m.map(x=>`<button class="chip${H.mode==x[0]?' on':''}" aria-pressed="${H.mode==x[0]}" onclick="H.mode='${x[0]}';home()">${x[1]}</button>`).join('')}</div>
+${H.mode=='solo'||H.mode=='pass'?`<div class="g2"><label>Category<select onchange="H.cat=this.value">${['Mixed',...CATS].map(c=>`<option${H.cat==c?' selected':''}>${c}</option>`).join('')}</select></label>
+<label>Difficulty<select onchange="H.diff=this.value">${['adaptive','easy','medium','hard'].map(c=>`<option value="${c}"${H.diff==c?' selected':''}>${c[0].toUpperCase()+c.slice(1)}</option>`).join('')}</select></label></div>`:''}
+${H.mode=='pass'?`<label>Players<select onchange="H.n=+this.value;home()">${[2,3,4].map(n=>`<option${H.n==n?' selected':''}>${n}</option>`).join('')}</select></label>
+<div class="g2">${Array.from({length:H.n},(_,i)=>`<input placeholder="Player ${i+1} name" aria-label="Player ${i+1} name" value="${esc(H.names[i])}" oninput="H.names[${i}]=this.value">`).join('')}</div>`:''}
+<button class="pri big" onclick="launch(H.mode)">Start ▶</button></section>`}
+
+/* ---------- quiz ---------- */
+function launch(mode,quiz){let c;
+if(mode=='daily'){const p=sh(Q,dk()).slice(0,5);c={title:'Daily Challenge',mode,pool:p,n:5,ad:0,pl:['You']}}
+else if(mode=='review'){const p=due().map(x=>allQ().find(q=>q.id==x.id)).filter(Boolean);c={title:'Review Mistakes',mode,pool:p,n:p.length,ad:0,pl:['You']}}
+else if(mode=='custom'){const p=sh(quiz.qs);c={title:quiz.name,mode,pool:p,n:Math.min(10,p.length),ad:0,pl:['You']}}
+else{let b=sh(H.cat=='Mixed'?Q:Q.filter(q=>q.c==H.cat)),ad=H.diff=='adaptive';
+const p=ad?b:b.filter(q=>q.d==H.diff).concat(b.filter(q=>q.d!=H.diff));
+const pl=mode=='pass'?H.names.slice(0,H.n).map((s,i)=>s.trim()||'Player '+(i+1)):['You'];
+c={title:mode=='pass'?'Pass-and-Play':H.cat+' quiz',mode,pool:p,n:Math.min(p.length,mode=='pass'?pl.length*3:10),ad,pl}}
+if(!c.pool.length){alert(mode=='review'?'No mistakes are due for review yet 🎉':'No questions available.');return}
+S={cfg:c,used:[],ad:{l:'medium',r:0,w:0},hard:0,conf:null,sel:null,hid:[],pu:{},log:[],sc:c.pl.map(()=>0),left:20,last:{mode,quiz}};
+S.q=pick();S.used.push(S.q.id);S.pu={};nq();}
+function pick(){const s=S,av=s.cfg.pool.filter(x=>!s.used.includes(x.id));if(!av.length)return null;if(!s.cfg.ad)return av[0];const m=av.filter(x=>x.d==s.ad.l),a=m.length?m:av;return a[Math.floor(Math.random()*a.length)]}
+function nq(){stop();S.conf='medium';S.sel=null;S.hid=[];S.left=20;rQ();tick=setInterval(()=>{if(S.sel!==null)return;S.left--;tm();if(S.left<=0)ans(-1)},1000)}
+function tm(){const e=$('#tm');if(e){e.textContent='⏱ '+Math.max(S.left,0)+'s';e.className=S.left<=5?'lo':''}}
+function rQ(){const s=S,q=s.q,c=s.cfg,p=(s.sel===null?s.log.length:s.log.length-1)%c.pl.length,l=s.log[s.log.length-1],used=s.pu;
+$('#app').innerHTML=`<main class="card"><div class="row b"><button class="g" onclick="home()">✕ Exit</button><b>${esc(c.title)}</b><b id="tm"></b></div>
+<div class="pg" role="progressbar" aria-valuemin="0" aria-valuemax="${c.n}" aria-valuenow="${s.log.length}"><i style="width:${s.log.length/c.n*100}%"></i></div>
+${c.pl.length>1?`<p>🎮 <b>${esc(c.pl[p])}</b>’s turn · ${c.pl.map((n,i)=>esc(n)+': '+s.sc[i]).join(' · ')}</p>`:''}
+<p class="m">Question ${Math.min(s.log.length+(s.sel===null?1:0),c.n)} of ${c.n} · ${esc(q.c)} · ${q.d}${c.ad?' · level: '+s.ad.l:''}</p>
+<h2>${esc(q.q)}</h2><button class="g" onclick="speak()">🔊 Read aloud</button>
+${s.sel===null?`<div class="ch" role="group" aria-label="Confidence"><span class="m">Confidence:</span>${Object.keys(CF).map(k=>`<button class="chip${s.conf==k?' on':''}" aria-pressed="${s.conf==k}" onclick="setC('${k}')">${CF[k][0]} (+${CF[k][1]} / ${CF[k][2]})</button>`).join('')}</div>`:''}
+<div class="opts">${q.o.map((o,i)=>s.hid.includes(i)?'':`<button class="opt${s.sel!==null?(i==q.a?' ok':i==s.sel?' bad':''):''}"${s.sel!==null||!s.conf?' disabled':''} onclick="ans(${i})"><kbd>${i+1}</kbd>${esc(o)}</button>`).join('')}</div>
+${s.sel===null&&!s.conf?'<p class="m">👆 Pick a confidence level to unlock the answers.</p>':''}
+${s.sel!==null&&l?`<div class="fb ${l.ok?'ok':'bad'}" role="status"><b>${s.sel==-1?'⏰ Time’s up! ':l.ok?'✅ Correct! ':'❌ Wrong. '}${l.pts>=0?'+':''}${l.pts} pts</b><p>${esc(q.e)}</p><button class="pri" onclick="nxt()">${s.log.length>=c.n?'See results':'Next (N)'} →</button></div>`:''}
+<div class="ch"><button class="chip" ${used.f||s.sel!==null?'disabled':''} onclick="fifty()">✂️ 50/50</button><button class="chip" ${used.z||s.sel!==null?'disabled':''} onclick="freeze()">❄️ +15s</button><button class="chip" ${used.s||s.sel!==null?'disabled':''} onclick="skip()">⏭ Skip</button></div></main>`;tm()}
+function setC(k){S.conf=k;rQ()}
+function ans(i){const s=S;if(!s||s.sel!==null)return;if(i!=-1&&!s.conf)return;const c=s.conf||'low',ok=i==s.q.a,pts=ok?CF[c][1]:CF[c][2],p=s.log.length%s.cfg.pl.length;
+s.sc[p]+=pts;s.log.push({q:s.q,pick:i,ok,pts,conf:c,time:20-Math.max(s.left,0)});
+const a=s.ad;if(ok){a.r++;a.w=0}else{a.w++;a.r=0}let x=LV.indexOf(a.l);if(a.r>=3){x=Math.min(2,x+1);a.r=0}if(a.w>=2){x=Math.max(0,x-1);a.w=0}a.l=LV[x];if(a.l=='hard')s.hard=1;
+s.sel=i;stop();rQ()}
+function nxt(){const s=S;if(!s||s.sel===null)return;const q=s.log.length>=s.cfg.n?null:pick();if(!q)return fin();s.q=q;s.used.push(q.id);nq()}
+function fifty(){if(S.pu.f||S.sel!==null)return;S.hid=sh([0,1,2,3].filter(i=>i!=S.q.a)).slice(0,2);S.pu.f=1;rQ()}
+function freeze(){if(S.pu.z||S.sel!==null)return;S.left+=15;S.pu.z=1;rQ()}
+function skip(){if(S.pu.s||S.sel!==null)return;const q=pick();if(!q)return;S.q=q;S.used.push(q.id);S.pu.s=1;S.conf='medium';S.hid=[];S.left=20;rQ()}
+function speak(){if(!('speechSynthesis' in window))return;speechSynthesis.cancel();speechSynthesis.speak(new SpeechSynthesisUtterance(S.q.q+'. '+S.q.o.map((o,i)=>'Option '+(i+1)+': '+o).join('. ')))}
+addEventListener('keydown',e=>{if(!S||/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)||!$('#tm'))return;const n=+e.key;if(n>=1&&n<=4&&!S.hid.includes(n-1))ans(n-1);if(e.key=='n'||e.key=='N')nxt()});
+
+/* ---------- finish / results ---------- */
+const BD=[['first','🏆','First Win','Finish a quiz with 60%+ accuracy',x=>x.t&&x.acc>=.6],['perfect','💯','Perfect Score','100% on 5+ questions',x=>x.t>=5&&x.acc==1],
+['fear','🎲','Fearless Bettor','3 correct High-confidence answers in a quiz',x=>x.log.filter(l=>l.conf=='high'&&l.ok).length>=3],
+['comeback','🔥','Comeback','Miss the first two, still finish 60%+',x=>x.t>=5&&!x.log[0].ok&&!x.log[1].ok&&x.acc>=.6],
+['str5','📅','5-Day Streak','Daily Challenge 5 days in a row',()=>streak()>=5],['fast','⚡','Speedster','Under 5s average (5+ questions)',x=>x.t>=5&&x.avg<5],
+['scholar','🎓','Scholar','50 correct answers total',()=>D.ct>=50],['ace','🚀','Adaptive Ace','Reach Hard in Adaptive mode',x=>x.hard&&x.ad],
+['mm','🧠','Mistake Master','Master a Mistake Deck card',x=>x.cleared>0],['party','🤝','Party Time','Finish Pass-and-Play',x=>x.pl>1]];
+function fin(){stop();const s=S,log=s.log,t=log.length,ok=log.filter(l=>l.ok).length,acc=t?ok/t:0,avg=t?log.reduce((a,l)=>a+l.time,0)/t:0;let cleared=0;
+for(const l of log){if(s.cfg.mode=='review')cleared+=rev(l.q.id,l.ok);else if(!l.ok)addMis(l.q.id)}
+for(const l of log){const o=D.cat[l.q.c]||[0,0];D.cat[l.q.c]=[o[0]+(l.ok?1:0),o[1]+1]}
+D.ct+=ok;if(s.cfg.mode=='daily')D.daily[dk()]=1;D.hist.push({s:s.sc.reduce((a,b)=>a+b,0),ok,t});D.hist=D.hist.slice(-100);
+const x={t,acc,avg,log,cleared,hard:s.hard,ad:s.cfg.ad,pl:s.cfg.pl.length};
+BD.forEach(b=>{if(!D.badges.includes(b[0])&&b[4](x)){D.badges.push(b[0]);toast(b[1]+' Unlocked: '+b[2])}});save();
+const rk=s.cfg.pl.map((n,i)=>({n,s:s.sc[i]})).sort((a,b)=>b.s-a.s),multi=s.cfg.pl.length>1;
+$('#app').innerHTML=`<section class="card"><h1>${multi?'🏁 '+esc(rk[0].n)+' wins!':'Results'}</h1>
+${multi?`<ol>${rk.map(r=>`<li>${esc(r.n)} — <b>${r.s}</b> pts</li>`).join('')}</ol>`:`<p class="score">${rk[0].s} <small class="m" style="font-size:1.2rem">pts</small></p>`}
+<p>${ok}/${t} correct · ${Math.round(acc*100)}% accuracy · avg ${avg.toFixed(1)}s per question</p>
+<div class="ch"><button class="pri" onclick="launch(S.last.mode,S.last.quiz)">Play again</button><button onclick="card(${rk[0].s},${acc},${ok},${t})">🖼 Make result card</button><button onclick="home()">Home</button></div><div id="card"></div>
+<h2>Review</h2><ul class="rv">${log.map((l,i)=>`<li class="${l.ok?'ok':'bad'}"><b>${i+1}. ${esc(l.q.q)}</b><div>Your answer: ${l.pick==-1?'— (time out)':esc(l.q.o[l.pick])} · Correct: ${esc(l.q.o[l.q.a])} · ${l.pts>=0?'+':''}${l.pts} (${l.conf})</div><div class="m">${esc(l.q.e)}</div></li>`).join('')}</ul></section>`}
+function card(sc,acc,ok,t){const c=document.createElement('canvas');c.width=800;c.height=420;const x=c.getContext('2d'),g=x.createLinearGradient(0,0,800,420);g.addColorStop(0,'#4f46e5');g.addColorStop(1,'#9333ea');x.fillStyle=g;x.fillRect(0,0,800,420);x.fillStyle='#fff';x.textAlign='center';
+x.font='bold 36px system-ui,sans-serif';x.fillText('QuizForge',400,70);x.font='24px system-ui,sans-serif';x.fillText(S.cfg.title,400,110);x.font='bold 110px system-ui,sans-serif';x.fillText(String(sc),400,250);x.font='26px system-ui,sans-serif';x.fillText('points',400,290);x.font='28px system-ui,sans-serif';x.fillText(ok+'/'+t+' correct · '+Math.round(acc*100)+'% accuracy',400,355);
+$('#card').innerHTML='<p class="m">Right-click (or long-press) the image to save it as a PNG.</p><img alt="Result card" style="max-width:100%;border-radius:12px" src="'+c.toDataURL('image/png')+'">'}
+
+/* ---------- stats ---------- */
+function stats(){stop();S=null;const cats=Object.entries(D.cat),h=D.hist.slice(-20),sc=h.map(x=>x.s),mn=Math.min(0,...sc),mx=Math.max(1,...sc),W=400,Ht=140;
+const pts=sc.map((v,i)=>(sc.length>1?i/(sc.length-1)*W:W/2)+','+(Ht-(v-mn)/(mx-mn)*(Ht-10)-5)).join(' ');
+const e=new Date(),tot=14*7+e.getDay()+1,st=new Date(e);st.setDate(e.getDate()-(tot-1));let hm='';for(let i=0;i<tot;i++){const d=new Date(st);d.setDate(st.getDate()+i);const k=dk(d);hm+=`<i class="${D.daily[k]?'on':''}" title="${k}"></i>`}
+$('#app').innerHTML=`<section class="card"><h1>📊 Your stats</h1><p>Quizzes: <b>${D.hist.length}</b> · Correct: <b>${D.ct}</b> · 🔥 Streak: <b>${streak()}</b> · Mistake deck: <b>${D.deck.length}</b></p>
+<h2>Accuracy by category</h2>${cats.length?cats.map(([c,v])=>{const p=Math.round(v[0]/v[1]*100);return`<div class="br"><span>${esc(c)}</span><div class="bar"><i style="width:${p}%"></i></div><span>${p}%</span></div>`}).join(''):'<p class="m">Play a quiz to see data.</p>'}
+<h2>Score over time</h2>${sc.length?`<svg viewBox="0 0 ${W} ${Ht}" role="img" aria-label="Score over time"><polyline points="${pts}" fill="none" stroke="var(--ac)" stroke-width="3"/></svg>`:'<p class="m">No games yet.</p>'}
+<h2>Daily Challenge calendar</h2><div class="hm" role="img" aria-label="Daily challenge streak calendar">${hm}</div>
+<h2>Achievements</h2><div class="bdg">${BD.map(b=>{const on=D.badges.includes(b[0]);return`<div class="${on?'on':''}"><span>${on?b[1]:'🔒'}</span><b>${b[2]}</b><small>${b[3]}</small></div>`}).join('')}</div></section>`}
+
+/* ---------- custom quizzes ---------- */
+function csv(t){const r=[];let w=[],c='',q=0;for(let i=0;i<t.length;i++){const h=t[i];if(q){if(h=='"'){if(t[i+1]=='"'){c+='"';i++}else q=0}else c+=h}else if(h=='"')q=1;else if(h==',')w.push(c),c='';else if(h=='\n'||h=='\r'){if(h=='\r'&&t[i+1]=='\n')i++;w.push(c);r.push(w);w=[];c=''}else c+=h}if(c||w.length){w.push(c);r.push(w)}return r.filter(x=>x.some(y=>y.trim()))}
+function parse(t){t=t.trim();const errs=[],qs=[];if(!t)return{qs,errs:['Paste JSON or CSV first.']};let raw;
+if(t[0]=='['||t[0]=='{'){try{const p=JSON.parse(t);raw=Array.isArray(p)?p:p.questions;if(!Array.isArray(raw))return{qs,errs:['JSON must be an array of questions.']}}catch(e){return{qs,errs:['Invalid JSON: '+e.message]}}}
+else{const rows=csv(t);if(rows.length&&rows[0][0].trim().toLowerCase()=='question')rows.shift();raw=rows.map(r=>({question:r[0],options:r.slice(1,5),answerIndex:Number(r[5])-1,explanation:r[6]||''}))}
+raw.forEach((q,i)=>{const n='Question '+(i+1)+': ';if(!q||typeof q.question!='string'||!q.question.trim())return errs.push(n+'missing question text.');
+if(!Array.isArray(q.options)||q.options.length!=4||q.options.some(o=>typeof o!='string'||!o.trim()))return errs.push(n+'needs exactly 4 non-empty options.');
+if(!Number.isInteger(q.answerIndex)||q.answerIndex<0||q.answerIndex>3)return errs.push(n+'answer must be option 1–4 (answerIndex 0–3).');
+qs.push({id:'c'+Date.now()+'_'+i,c:'Custom',d:LV.includes(q.difficulty)?q.difficulty:'medium',q:q.question.trim(),o:q.options.map(o=>o.trim()),a:q.answerIndex,e:q.explanation||''})});
+if(!qs.length&&!errs.length)errs.push('No questions found.');return{qs,errs}}
+function cust(msg){stop();S=null;$('#app').innerHTML=`<section class="card"><h1>🛠 Custom quizzes</h1><p class="m">Paste JSON (<code>[{"question","options":[4],"answerIndex":0-3,"explanation"}]</code>) or CSV (question, A, B, C, D, answer 1–4, explanation).</p>
+<input id="cn" placeholder="Quiz name" aria-label="Quiz name"><textarea id="ct" rows="8" aria-label="Quiz data"></textarea>
+<div class="ch"><input type="file" id="cf" accept=".json,.csv,.txt" aria-label="Upload quiz file"><button class="pri" onclick="saveQ()">Validate &amp; save</button></div>
+<ul class="err" id="ce" role="alert">${(msg||[]).map(m=>`<li>${esc(m)}</li>`).join('')}</ul><div id="ex"></div>
+<h2>Saved quizzes</h2>${D.custom.length?D.custom.map((z,i)=>`<div class="row b sv"><span>${esc(z.name)} <small class="m">(${z.qs.length} questions)</small></span><span class="ch"><button class="pri" onclick="launch('custom',D.custom[${i}])">Play</button><button onclick="expQ(${i})">Export JSON</button><button onclick="D.custom.splice(${i},1);save();cust()">Delete</button></span></div>`).join(''):'<p class="m">None yet.</p>'}</section>`;
+$('#cf').onchange=e=>{const f=e.target.files[0];if(f)f.text().then(t=>$('#ct').value=t)}}
+function saveQ(){const r=parse($('#ct').value);if(r.errs.length)return cust(r.errs);D.custom.push({name:$('#cn').value.trim()||'My quiz',qs:r.qs});save();cust()}
+function expQ(i){const z=D.custom[i],j=JSON.stringify(z.qs.map(q=>({question:q.q,options:q.o,answerIndex:q.a,explanation:q.e,difficulty:q.d})),null,2);$('#ex').innerHTML='<p class="m">Copy this JSON to share or back up your quiz:</p><textarea rows="8" readonly>'+esc(j)+'</textarea>';$('#ex textarea').select()}
+home();
+</script>
+</body>
+</html>
